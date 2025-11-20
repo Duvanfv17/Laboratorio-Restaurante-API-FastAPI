@@ -5,6 +5,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
+sqllitename = "restaurante.db"
 # URL de conexión a SQLite (puedes cambiarla por PostgreSQL o MySQL si deseas)
 URL_BASE_DATOS = "sqlite:///./restaurante.db"
 
