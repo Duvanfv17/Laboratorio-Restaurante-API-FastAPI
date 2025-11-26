@@ -1,5 +1,4 @@
-# schemas/schemas.py
-# Esquemas (Pydantic) para validar y estructurar los datos enviados a la API
+# app/schemas/schemas.py
 
 from pydantic import BaseModel
 from datetime import datetime
@@ -15,7 +14,8 @@ class CategoriaCreate(CategoriaBase):
 class Categoria(CategoriaBase):
     id: int
     class Config:
-        orm_mode = True
+        from_attributes = True
+
 
 # -------- Plato --------
 class PlatoBase(BaseModel):
@@ -30,7 +30,8 @@ class PlatoCreate(PlatoBase):
 class Plato(PlatoBase):
     id: int
     class Config:
-        orm_mode = True
+        from_attributes = True
+
 
 # -------- Cliente --------
 class ClienteBase(BaseModel):
@@ -44,7 +45,8 @@ class ClienteCreate(ClienteBase):
 class Cliente(ClienteBase):
     id: int
     class Config:
-        orm_mode = True
+        from_attributes = True
+
 
 # -------- Mesero --------
 class MeseroBase(BaseModel):
@@ -57,7 +59,8 @@ class MeseroCreate(MeseroBase):
 class Mesero(MeseroBase):
     id: int
     class Config:
-        orm_mode = True
+        from_attributes = True
+
 
 # -------- Pedido --------
 class PedidoBase(BaseModel):
@@ -73,9 +76,9 @@ class Pedido(PedidoBase):
     id: int
     fecha_creacion: datetime
     class Config:
-        orm_mode = True
+        from_attributes = True
 
-# -------- DetallePedido --------
+# -------- Detalles_Pedidos --------
 class DetallePedidoBase(BaseModel):
     pedido_id: int
     plato_id: int
@@ -88,4 +91,5 @@ class DetallePedidoCreate(DetallePedidoBase):
 class DetallePedido(DetallePedidoBase):
     id: int
     class Config:
-        from_attributes = True  # reemplaza orm_mode por esto si usas Pydantic v2
+        from_attributes = True
+

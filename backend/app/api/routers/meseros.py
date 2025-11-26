@@ -1,8 +1,11 @@
+# app/api/routers/meseros.py
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-import models.models as models
-import schemas.schemas as schemas
-from database import SessionLocal
+from app.models import models
+from app.schemas import schemas
+from app.database.connection import SessionLocal
+
 
 router = APIRouter(prefix="/meseros", tags=["Meseros"])
 

@@ -1,11 +1,9 @@
-# models/models.py
-# Modelos de base de datos (tablas) según el modelo relacional del restaurante
+# app/models/models.py
 
 from datetime import datetime, timezone, timedelta
 from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
-from database import Base
-from datetime import datetime
+from app.database.connection import Base  # ← Import corregido
 
 class Categoria(Base):
     __tablename__ = "categorias"
@@ -13,6 +11,7 @@ class Categoria(Base):
     nombre = Column(String)
     descripcion = Column(String)
     platos = relationship("Plato", back_populates="categoria")
+
 
 class Plato(Base):
     __tablename__ = "platos"
@@ -24,6 +23,7 @@ class Plato(Base):
     categoria = relationship("Categoria", back_populates="platos")
     detalles = relationship("DetallePedido", back_populates="plato")
 
+
 class Cliente(Base):
     __tablename__ = "clientes"
     id = Column(Integer, primary_key=True, index=True)
@@ -32,12 +32,14 @@ class Cliente(Base):
     correo = Column(String)
     pedidos = relationship("Pedido", back_populates="cliente")
 
+
 class Mesero(Base):
     __tablename__ = "meseros"
     id = Column(Integer, primary_key=True, index=True)
     nombre = Column(String)
     codigo_empleado = Column(String)
     pedidos = relationship("Pedido", back_populates="mesero")
+
 
 class Pedido(Base):
     __tablename__ = "pedidos"
@@ -51,6 +53,11 @@ class Pedido(Base):
     mesero = relationship("Mesero", back_populates="pedidos")
     detalles = relationship("DetallePedido", back_populates="pedido")
 
+# app/models/models.py  (solo la clase DetallePedido)
+from sqlalchemy import Column, Integer, Float, ForeignKey
+from sqlalchemy.orm import relationship
+from app.database.connection import Base
+
 class DetallePedido(Base):
     __tablename__ = "detalles_pedidos"
 
@@ -62,4 +69,3 @@ class DetallePedido(Base):
 
     pedido = relationship("Pedido", back_populates="detalles")
     plato = relationship("Plato", back_populates="detalles")
-
