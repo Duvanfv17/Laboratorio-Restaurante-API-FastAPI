@@ -1,97 +1,259 @@
 import { useState, useEffect } from "react";
 import api from "../api/api";
 
-export default function Pedidos() {
-  const [pedidos, setPedidos] = useState([]);
-  const [clientes, setClientes] = useState([]);
-  const [meseros, setMeseros] = useState([]);
+function Pedidos() {
+    // Estados para selects
+    const [clientes, setClientes] = useState([]);
+    const [meseros, setMeseros] = useState([]);
 
-  const [form, setForm] = useState({
-    cliente_id: "",
-    mesero_id: "",
-    total: "",
-    estado: "",
-  });
+    // Estados para crear
+    const [clienteId, setClienteId] = useState("");
+    const [meseroId, setMeseroId] = useState("");
+    const [total, setTotal] = useState("");
+    const [estado, setEstado] = useState("");
 
-  const [editId, setEditId] = useState(null);
+    // Estados para listar
+    const [pedidos, setPedidos] = useState([]);
 
-  const cargarDatos = async () => {
-    const resPedidos = await api.get("/pedidos/");
-    const resClientes = await api.get("/clientes/");
-    const resMeseros = await api.get("/meseros/");
+    // Estado para edición
+    const [editando, setEditando] = useState(null);
+    const [editClienteId, setEditClienteId] = useState("");
+    const [editMeseroId, setEditMeseroId] = useState("");
+    const [editTotal, setEditTotal] = useState("");
+    const [editEstado, setEditEstado] = useState("");
 
-    setPedidos(resPedidos.data);
-    setClientes(resClientes.data);
-    setMeseros(resMeseros.data);
-  };
+    // Cargar datos al iniciar
+    useEffect(() => {
+        cargarDatos();
+    }, []);
 
-  useEffect(() => {
-    cargarDatos();
-  }, []);
+    const cargarDatos = async () => {
+        try {
+            const p = await api.get("/pedidos/");
+            const c = await api.get("/clientes/");
+            const m = await api.get("/meseros/");
 
-  const manejarCambios = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+            setPedidos(p.data);
+            setClientes(c.data);
+            setMeseros(m.data);
 
-  const guardar = async () => {
-    const datos = { ...form, total: parseFloat(form.total) };
+        } catch (error) {
+            console.log("Error al cargar datos", error);
+        }
+    };
 
-    if (editId === null) {
-      await api.post("/pedidos/", datos);
-    } else {
-      await api.put(`/pedidos/${editId}`, datos);
-      setEditId(null);
-    }
+    // Crear pedido
+    const crearPedido = async () => {
+        try {
+            await api.post("/pedidos/", {
+                cliente_id: clienteId,
+                mesero_id: meseroId,
+                total: parseFloat(total),
+                estado,
+            });
 
-    setForm({ cliente_id: "", mesero_id: "", total: "", estado: "" });
-    cargarDatos();
-  };
+            alert("Pedido creado correctamente");
 
-  const editar = (item) => {
-    setEditId(item.id);
-    setForm(item);
-  };
+            setClienteId("");
+            setMeseroId("");
+            setTotal("");
+            setEstado("");
 
-  const eliminar = async (id) => {
-    await api.delete(`/pedidos/${id}`);
-    cargarDatos();
-  };
+            cargarDatos();
+        } catch (error) {
+            alert("Error al crear pedido");
+        }
+    };
 
-  return (
-    <div>
-      <h2>Pedidos</h2>
+    // Eliminar pedido
+    const eliminarPedido = async (id) => {
+        try {
+            await api.delete(`/pedidos/${id}`);
+            alert("Pedido eliminado");
+            cargarDatos();
+        } catch (error) {
+            alert("Error al eliminar pedido");
+        }
+    };
 
-      <select name="cliente_id" value={form.cliente_id} onChange={manejarCambios}>
-        <option value="">Seleccione cliente</option>
-        {clientes.map((c) => (
-          <option key={c.id} value={c.id}>{c.nombre}</option>
-        ))}
-      </select>
+    // Activar modo edición
+    const activarEdicion = (p) => {
+        setEditando(p.id);
+        setEditClienteId(p.cliente_id);
+        setEditMeseroId(p.mesero_id);
+        setEditTotal(p.total);
+        setEditEstado(p.estado);
+    };
 
-      <select name="mesero_id" value={form.mesero_id} onChange={manejarCambios}>
-        <option value="">Seleccione mesero</option>
-        {meseros.map((m) => (
-          <option key={m.id} value={m.id}>{m.nombre}</option>
-        ))}
-      </select>
+    // Guardar edición
+    const actualizarPedido = async () => {
+        try {
+            await api.put(`/pedidos/${editando}`, {
+                cliente_id: editClienteId,
+                mesero_id: editMeseroId,
+                total: parseFloat(editTotal),
+                estado: editEstado,
+            });
 
-      <input name="total" placeholder="Total" value={form.total} onChange={manejarCambios} />
-      <input name="estado" placeholder="Estado" value={form.estado} onChange={manejarCambios} />
+            alert("Pedido actualizado correctamente");
 
-      <button onClick={guardar}>{editId === null ? "Crear" : "Actualizar"}</button>
+            setEditando(null);
+            cargarDatos();
 
-      <hr />
+        } catch (error) {
+            alert("Error al actualizar pedido");
+        }
+    };
 
-      <h3>Lista de pedidos</h3>
-      <ul>
-        {pedidos.map((p) => (
-          <li key={p.id}>
-            Pedido #{p.id} — Total: ${p.total} — Estado: {p.estado}
-            <button onClick={() => editar(p)}>Editar</button>
-            <button onClick={() => eliminar(p.id)}>Eliminar</button>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
+    return (
+        <div>
+            <h2>Crear Pedido</h2>
+
+            {/* FORMULARIO CREAR */}
+            <div>
+                <label>Cliente:</label><br />
+                <select
+                    value={clienteId}
+                    onChange={(e) => setClienteId(e.target.value)}
+                >
+                    <option value="">Seleccione</option>
+                    {clientes.map((c) => (
+                        <option key={c.id} value={c.id}>{c.nombre}</option>
+                    ))}
+                </select><br /><br />
+
+                <label>Mesero:</label><br />
+                <select
+                    value={meseroId}
+                    onChange={(e) => setMeseroId(e.target.value)}
+                >
+                    <option value="">Seleccione</option>
+                    {meseros.map((m) => (
+                        <option key={m.id} value={m.id}>{m.nombre}</option>
+                    ))}
+                </select><br /><br />
+
+                <label>Total:</label><br />
+                <input
+                    type="number"
+                    value={total}
+                    onChange={(e) => setTotal(e.target.value)}
+                /><br /><br />
+
+                <label>Estado:</label><br />
+                <input
+                    value={estado}
+                    onChange={(e) => setEstado(e.target.value)}
+                /><br /><br />
+
+                <button onClick={crearPedido}>Guardar</button>
+            </div>
+
+            <hr />
+
+            {/* LISTADO */}
+            <h2>Listado de Pedidos</h2>
+
+            <table border="1" cellPadding="10">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Cliente</th>
+                        <th>Mesero</th>
+                        <th>Total</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {pedidos.map((p) => (
+                        <tr key={p.id}>
+                            <td>{p.id}</td>
+
+                            {/* CLIENTE */}
+                            <td>
+                                {editando === p.id ? (
+                                    <select
+                                        value={editClienteId}
+                                        onChange={(e) => setEditClienteId(e.target.value)}
+                                    >
+                                        {clientes.map((c) => (
+                                            <option key={c.id} value={c.id}>{c.nombre}</option>
+                                        ))}
+                                    </select>
+                                ) : (
+                                    clientes.find((c) => c.id === p.cliente_id)?.nombre
+                                )}
+                            </td>
+
+                            {/* MESERO */}
+                            <td>
+                                {editando === p.id ? (
+                                    <select
+                                        value={editMeseroId}
+                                        onChange={(e) => setEditMeseroId(e.target.value)}
+                                    >
+                                        {meseros.map((m) => (
+                                            <option key={m.id} value={m.id}>{m.nombre}</option>
+                                        ))}
+                                    </select>
+                                ) : (
+                                    meseros.find((m) => m.id === p.mesero_id)?.nombre
+                                )}
+                            </td>
+
+                            {/* TOTAL */}
+                            <td>
+                                {editando === p.id ? (
+                                    <input
+                                        type="number"
+                                        value={editTotal}
+                                        onChange={(e) => setEditTotal(e.target.value)}
+                                    />
+                                ) : (
+                                    `$${p.total}`
+                                )}
+                            </td>
+
+                            {/* ESTADO */}
+                            <td>
+                                {editando === p.id ? (
+                                    <input
+                                        value={editEstado}
+                                        onChange={(e) => setEditEstado(e.target.value)}
+                                    />
+                                ) : (
+                                    p.estado
+                                )}
+                            </td>
+
+                            {/* BOTONES */}
+                            <td>
+                                {editando === p.id ? (
+                                    <>
+                                        <button onClick={actualizarPedido}>Guardar</button>
+                                        <button onClick={() => setEditando(null)}>Cancelar</button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <button onClick={() => activarEdicion(p)}>Editar</button>
+                                        <button
+                                            onClick={() => eliminarPedido(p.id)}
+                                            style={{ color: "red", marginLeft: "10px" }}
+                                        >
+                                            Eliminar
+                                        </button>
+                                    </>
+                                )}
+                            </td>
+
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    );
 }
+
+export default Pedidos;

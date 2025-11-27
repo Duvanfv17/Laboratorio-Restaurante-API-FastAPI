@@ -1,68 +1,211 @@
 import { useState, useEffect } from "react";
 import api from "../api/api";
 
-export default function Clientes() {
-  const [clientes, setClientes] = useState([]);
-  const [form, setForm] = useState({ nombre: "", telefono: "", correo: "" });
-  const [editId, setEditId] = useState(null);
+function Clientes() {
 
-  const cargarDatos = async () => {
-    const res = await api.get("/clientes/");
-    setClientes(res.data);
-  };
+    // Estados para crear
+    const [nombre, setNombre] = useState("");
+    const [telefono, setTelefono] = useState("");
+    const [correo, setCorreo] = useState("");
 
-  useEffect(() => {
-    cargarDatos();
-  }, []);
+    // Estados para listar
+    const [clientes, setClientes] = useState([]);
 
-  const manejarCambios = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+    // Estado para edición
+    const [editando, setEditando] = useState(null);
+    const [editNombre, setEditNombre] = useState("");
+    const [editTelefono, setEditTelefono] = useState("");
+    const [editCorreo, setEditCorreo] = useState("");
 
-  const guardar = async () => {
-    if (editId === null) {
-      await api.post("/clientes/", form);
-    } else {
-      await api.put(`/clientes/${editId}`, form);
-      setEditId(null);
-    }
-    setForm({ nombre: "", telefono: "", correo: "" });
-    cargarDatos();
-  };
+    // Cargar datos al iniciar
+    useEffect(() => {
+        cargarClientes();
+    }, []);
 
-  const editar = (item) => {
-    setEditId(item.id);
-    setForm(item);
-  };
+    const cargarClientes = async () => {
+        try {
+            const resp = await api.get("/clientes/");
+            setClientes(resp.data);
+        } catch (error) {
+            console.log("Error al cargar clientes", error);
+        }
+    };
 
-  const eliminar = async (id) => {
-    await api.delete(`/clientes/${id}`);
-    cargarDatos();
-  };
+    // Crear cliente
+    const crearCliente = async () => {
+        try {
+            await api.post("/clientes/", {
+                nombre,
+                telefono,
+                correo,
+            });
 
-  return (
-    <div>
-      <h2>Clientes</h2>
+            alert("Cliente creado correctamente");
 
-      <input name="nombre" placeholder="Nombre" value={form.nombre} onChange={manejarCambios} />
-      <input name="telefono" placeholder="Teléfono" value={form.telefono} onChange={manejarCambios} />
-      <input name="correo" placeholder="Correo" value={form.correo} onChange={manejarCambios} />
+            setNombre("");
+            setTelefono("");
+            setCorreo("");
 
-      <button onClick={guardar}>{editId === null ? "Crear" : "Actualizar"}</button>
+            cargarClientes();
+        } catch (error) {
+            alert("Error al crear cliente");
+        }
+    };
 
-      <hr />
+    // Eliminar cliente
+    const eliminarCliente = async (id) => {
+        try {
+            await api.delete(`/clientes/${id}`);
+            alert("Cliente eliminado");
+            cargarClientes();
+        } catch (error) {
+            alert("Error al eliminar cliente");
+        }
+    };
 
-      <h3>Lista de clientes</h3>
+    // Activar modo edición
+    const activarEdicion = (cliente) => {
+        setEditando(cliente.id);
+        setEditNombre(cliente.nombre);
+        setEditTelefono(cliente.telefono);
+        setEditCorreo(cliente.correo);
+    };
 
-      <ul>
-        {clientes.map((c) => (
-          <li key={c.id}>
-            {c.nombre} - {c.telefono} - {c.correo}
-            <button onClick={() => editar(c)}>Editar</button>
-            <button onClick={() => eliminar(c.id)}>Eliminar</button>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
+    // Guardar edición
+    const actualizarCliente = async () => {
+        try {
+            await api.put(`/clientes/${editando}`, {
+                nombre: editNombre,
+                telefono: editTelefono,
+                correo: editCorreo,
+            });
+
+            alert("Cliente actualizado");
+            setEditando(null);
+            cargarClientes();
+        } catch (error) {
+            alert("Error al actualizar cliente");
+        }
+    };
+
+    return (
+        <div>
+            <h2>Crear Cliente</h2>
+
+            {/* FORMULARIO CREAR */}
+            <div>
+                <label>Nombre:</label><br />
+                <input
+                    value={nombre}
+                    onChange={(e) => setNombre(e.target.value)}
+                /><br /><br />
+
+                <label>Teléfono:</label><br />
+                <input
+                    value={telefono}
+                    onChange={(e) => setTelefono(e.target.value)}
+                /><br /><br />
+
+                <label>Correo:</label><br />
+                <input
+                    value={correo}
+                    onChange={(e) => setCorreo(e.target.value)}
+                /><br /><br />
+
+                <button onClick={crearCliente}>Guardar</button>
+            </div>
+
+            <hr />
+
+            {/* LISTADO */}
+            <h2>Listado de Clientes</h2>
+
+            <table border="1" cellPadding="10">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Teléfono</th>
+                        <th>Correo</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {clientes.map((cli) => (
+                        <tr key={cli.id}>
+                            <td>{cli.id}</td>
+
+                            {/* NOMBRE */}
+                            <td>
+                                {editando === cli.id ? (
+                                    <input
+                                        value={editNombre}
+                                        onChange={(e) => setEditNombre(e.target.value)}
+                                    />
+                                ) : (
+                                    cli.nombre
+                                )}
+                            </td>
+
+                            {/* TELEFONO */}
+                            <td>
+                                {editando === cli.id ? (
+                                    <input
+                                        value={editTelefono}
+                                        onChange={(e) => setEditTelefono(e.target.value)}
+                                    />
+                                ) : (
+                                    cli.telefono
+                                )}
+                            </td>
+
+                            {/* CORREO */}
+                            <td>
+                                {editando === cli.id ? (
+                                    <input
+                                        value={editCorreo}
+                                        onChange={(e) => setEditCorreo(e.target.value)}
+                                    />
+                                ) : (
+                                    cli.correo
+                                )}
+                            </td>
+
+                            {/* BOTONES */}
+                            <td>
+                                {editando === cli.id ? (
+                                    <>
+                                        <button onClick={actualizarCliente}>
+                                            Guardar
+                                        </button>
+
+                                        <button onClick={() => setEditando(null)}>
+                                            Cancelar
+                                        </button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <button onClick={() => activarEdicion(cli)}>
+                                            Editar
+                                        </button>
+
+                                        <button
+                                            onClick={() => eliminarCliente(cli.id)}
+                                            style={{ color: "red", marginLeft: "10px" }}
+                                        >
+                                            Eliminar
+                                        </button>
+                                    </>
+                                )}
+                            </td>
+
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    );
 }
+
+export default Clientes;

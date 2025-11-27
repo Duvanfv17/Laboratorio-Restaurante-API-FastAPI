@@ -1,100 +1,260 @@
 import { useState, useEffect } from "react";
 import api from "../api/api";
 
-export default function DetallesPedidos() {
-  const [detalles, setDetalles] = useState([]);
-  const [pedidos, setPedidos] = useState([]);
-  const [platos, setPlatos] = useState([]);
+function DetallesPedidos() {
+    // Selects
+    const [pedidos, setPedidos] = useState([]);
+    const [platos, setPlatos] = useState([]);
 
-  const [form, setForm] = useState({
-    pedido_id: "",
-    plato_id: "",
-    cantidad: "",
-    subtotal: "",
-  });
+    // Estados para crear
+    const [pedidoId, setPedidoId] = useState("");
+    const [platoId, setPlatoId] = useState("");
+    const [cantidad, setCantidad] = useState("");
+    const [subtotal, setSubtotal] = useState("");
 
-  const [editId, setEditId] = useState(null);
+    // Listado
+    const [detalles, setDetalles] = useState([]);
 
-  const cargarDatos = async () => {
-    const resDetalles = await api.get("/detalles_pedidos/");
-    const resPedidos = await api.get("/pedidos/");
-    const resPlatos = await api.get("/platos/");
-    setDetalles(resDetalles.data);
-    setPedidos(resPedidos.data);
-    setPlatos(resPlatos.data);
-  };
+    // Estados para edición
+    const [editando, setEditando] = useState(null);
+    const [editPedidoId, setEditPedidoId] = useState("");
+    const [editPlatoId, setEditPlatoId] = useState("");
+    const [editCantidad, setEditCantidad] = useState("");
+    const [editSubtotal, setEditSubtotal] = useState("");
 
-  useEffect(() => {
-    cargarDatos();
-  }, []);
+    // Cargar datos iniciales
+    useEffect(() => {
+        cargarDatos();
+    }, []);
 
-  const manejarCambios = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+    const cargarDatos = async () => {
+        try {
+            const d = await api.get("/detalles_pedidos/");
+            const p = await api.get("/pedidos/");
+            const pl = await api.get("/platos/");
 
-  const guardar = async () => {
-    const datos = { 
-      ...form, 
-      cantidad: parseInt(form.cantidad),
-      subtotal: parseFloat(form.subtotal) 
+            setDetalles(d.data);
+            setPedidos(p.data);
+            setPlatos(pl.data);
+
+        } catch (error) {
+            console.log("Error al cargar datos", error);
+        }
     };
 
-    if (editId === null) {
-      await api.post("/detalles_pedidos/", datos);
-    } else {
-      await api.put(`/detalles_pedidos/${editId}`, datos);
-      setEditId(null);
-    }
+    // Crear detalle
+    const crearDetalle = async () => {
+        try {
+            await api.post("/detalles_pedidos/", {
+                pedido_id: pedidoId,
+                plato_id: platoId,
+                cantidad: parseInt(cantidad),
+                subtotal: parseFloat(subtotal)
+            });
 
-    setForm({ pedido_id: "", plato_id: "", cantidad: "", subtotal: "" });
-    cargarDatos();
-  };
+            alert("Detalle creado correctamente");
 
-  const editar = (item) => {
-    setEditId(item.id);
-    setForm(item);
-  };
+            setPedidoId("");
+            setPlatoId("");
+            setCantidad("");
+            setSubtotal("");
 
-  const eliminar = async (id) => {
-    await api.delete(`/detalles_pedidos/${id}`);
-    cargarDatos();
-  };
+            cargarDatos();
+        } catch (error) {
+            alert("Error al crear detalle");
+        }
+    };
 
-  return (
-    <div>
-      <h2>Detalles de pedidos</h2>
+    // Eliminar detalle
+    const eliminarDetalle = async (id) => {
+        try {
+            await api.delete(`/detalles_pedidos/${id}`);
+            alert("Detalle eliminado");
+            cargarDatos();
+        } catch (error) {
+            alert("Error al eliminar detalle");
+        }
+    };
 
-      <select name="pedido_id" value={form.pedido_id} onChange={manejarCambios}>
-        <option value="">Seleccione pedido</option>
-        {pedidos.map((p) => (
-          <option key={p.id} value={p.id}>Pedido #{p.id}</option>
-        ))}
-      </select>
+    // Activar modo edición
+    const activarEdicion = (d) => {
+        setEditando(d.id);
+        setEditPedidoId(d.pedido_id);
+        setEditPlatoId(d.plato_id);
+        setEditCantidad(d.cantidad);
+        setEditSubtotal(d.subtotal);
+    };
 
-      <select name="plato_id" value={form.plato_id} onChange={manejarCambios}>
-        <option value="">Seleccione plato</option>
-        {platos.map((p) => (
-          <option key={p.id} value={p.id}>{p.nombre}</option>
-        ))}
-      </select>
+    // Guardar edición
+    const actualizarDetalle = async () => {
+        try {
+            await api.put(`/detalles_pedidos/${editando}`, {
+                pedido_id: editPedidoId,
+                plato_id: editPlatoId,
+                cantidad: parseInt(editCantidad),
+                subtotal: parseFloat(editSubtotal)
+            });
 
-      <input name="cantidad" placeholder="Cantidad" value={form.cantidad} onChange={manejarCambios} />
-      <input name="subtotal" placeholder="Subtotal" value={form.subtotal} onChange={manejarCambios} />
+            alert("Detalle actualizado correctamente");
+            setEditando(null);
+            cargarDatos();
 
-      <button onClick={guardar}>{editId === null ? "Crear" : "Actualizar"}</button>
+        } catch (error) {
+            alert("Error al actualizar detalle");
+        }
+    };
 
-      <hr />
+    return (
+        <div>
+            <h2>Crear Detalle de Pedido</h2>
 
-      <h3>Lista de detalles</h3>
-      <ul>
-        {detalles.map((d) => (
-          <li key={d.id}>
-            Pedido {d.pedido_id} — Plato {d.plato_id} — Cantidad: {d.cantidad} — Subtotal: {d.subtotal}
-            <button onClick={() => editar(d)}>Editar</button>
-            <button onClick={() => eliminar(d.id)}>Eliminar</button>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
+            {/* FORMULARIO CREAR */}
+            <div>
+                <label>Pedido:</label><br />
+                <select
+                    value={pedidoId}
+                    onChange={(e) => setPedidoId(e.target.value)}
+                >
+                    <option value="">Seleccione</option>
+                    {pedidos.map((p) => (
+                        <option key={p.id} value={p.id}>Pedido #{p.id}</option>
+                    ))}
+                </select><br /><br />
+
+                <label>Plato:</label><br />
+                <select
+                    value={platoId}
+                    onChange={(e) => setPlatoId(e.target.value)}
+                >
+                    <option value="">Seleccione</option>
+                    {platos.map((pl) => (
+                        <option key={pl.id} value={pl.id}>{pl.nombre}</option>
+                    ))}
+                </select><br /><br />
+
+                <label>Cantidad:</label><br />
+                <input
+                    type="number"
+                    value={cantidad}
+                    onChange={(e) => setCantidad(e.target.value)}
+                /><br /><br />
+
+                <label>Subtotal:</label><br />
+                <input
+                    type="number"
+                    value={subtotal}
+                    onChange={(e) => setSubtotal(e.target.value)}
+                /><br /><br />
+
+                <button onClick={crearDetalle}>Guardar</button>
+            </div>
+
+            <hr />
+
+            {/* TABLA */}
+            <h2>Listado de Detalles</h2>
+
+            <table border="1" cellPadding="10">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Pedido</th>
+                        <th>Plato</th>
+                        <th>Cantidad</th>
+                        <th>Subtotal</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {detalles.map((d) => (
+                        <tr key={d.id}>
+                            <td>{d.id}</td>
+
+                            {/* PEDIDO */}
+                            <td>
+                                {editando === d.id ? (
+                                    <select
+                                        value={editPedidoId}
+                                        onChange={(e) => setEditPedidoId(e.target.value)}
+                                    >
+                                        {pedidos.map((p) => (
+                                            <option key={p.id} value={p.id}>Pedido #{p.id}</option>
+                                        ))}
+                                    </select>
+                                ) : (
+                                    `Pedido #${d.pedido_id}`
+                                )}
+                            </td>
+
+                            {/* PLATO */}
+                            <td>
+                                {editando === d.id ? (
+                                    <select
+                                        value={editPlatoId}
+                                        onChange={(e) => setEditPlatoId(e.target.value)}
+                                    >
+                                        {platos.map((pl) => (
+                                            <option key={pl.id} value={pl.id}>{pl.nombre}</option>
+                                        ))}
+                                    </select>
+                                ) : (
+                                    platos.find((pl) => pl.id === d.plato_id)?.nombre
+                                )}
+                            </td>
+
+                            {/* CANTIDAD */}
+                            <td>
+                                {editando === d.id ? (
+                                    <input
+                                        type="number"
+                                        value={editCantidad}
+                                        onChange={(e) => setEditCantidad(e.target.value)}
+                                    />
+                                ) : (
+                                    d.cantidad
+                                )}
+                            </td>
+
+                            {/* SUBTOTAL */}
+                            <td>
+                                {editando === d.id ? (
+                                    <input
+                                        type="number"
+                                        value={editSubtotal}
+                                        onChange={(e) => setEditSubtotal(e.target.value)}
+                                    />
+                                ) : (
+                                    `$${d.subtotal}`
+                                )}
+                            </td>
+
+                            {/* BOTONES */}
+                            <td>
+                                {editando === d.id ? (
+                                    <>
+                                        <button onClick={actualizarDetalle}>Guardar</button>
+                                        <button onClick={() => setEditando(null)}>Cancelar</button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <button onClick={() => activarEdicion(d)}>Editar</button>
+                                        <button
+                                            onClick={() => eliminarDetalle(d.id)}
+                                            style={{ color: "red", marginLeft: "10px" }}
+                                        >
+                                            Eliminar
+                                        </button>
+                                    </>
+                                )}
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+
+        </div>
+    );
 }
+
+export default DetallesPedidos;
